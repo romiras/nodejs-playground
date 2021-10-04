@@ -1,0 +1,38 @@
+{
+  "name": "nodejs-playground",
+  "version": "0.0.1",
+  "description": "a playground for Node.js worker",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "jest --coverage --forceExit --detectOpenHandles --config ./test/jest.config.json",
+    "start:dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "release": "git checkout master && git pull origin master && TAG=$(node -p \"require('./package.json').version\") && git tag $TAG && git push origin $TAG"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romiras/nodejs-playground.git"
+  },
+  "dependencies": {
+    "ajv": "^8.6.3",
+    "dotenv": "^9.0.2",
+    "typescript": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.6.1",
+    "@typescript-eslint/eslint-plugin": "^4.32.0",
+    "@typescript-eslint/parser": "^4.32.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "jest": "^27.2.4",
+    "prettier": "^2.2.1",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.2.1",
+    "tsconfig-paths": "^3.11.0"
+  }
+}
