@@ -8,6 +8,7 @@ import {
 	TScore
 } from "./types";
 import { GetStatusesByIDs } from "./repositories/elasticsearch";
+import { Sentiment_NEUTRAL_SET, SocialType_GP, SocialType_TP, SocialType_IOS, SocialType_TWITTER } from "./constants";
 
 export interface IRanker {
 	Rank(ids: Array<TStatusID>): void
@@ -65,7 +66,7 @@ export class Ranker implements IRanker {
 		let max_followers = bp_metric.max_followers || 0;
 
 		// assign better scores to non-neutral statuses
-		let sentiment_score = NEUTRAL_SET.include(sentiment.value) ? 0.0 : 1.0;
+		let sentiment_score = Sentiment_NEUTRAL_SET.include(sentiment.value) ? 0.0 : 1.0;
 
 		// R NOTE: for some reason, favorites and replies on Twitter are strings,
 		// even though the Elastic mapping is "long". need to check further.
@@ -95,21 +96,29 @@ export class Ranker implements IRanker {
 		return score
 	}
 
-	private GetEngagementsCount(counts: Object, social_type: string): number {
+	private GetEngagementsCount(counts: Object, social_type: number): number {
 		// TODO implement GetEngagementsCount
 
 		switch (social_type) {
-			case Constants::SocialType::GP, Constants::SocialType::TP, Constants::SocialType::IOS:
-				return 10 - counts.rating.to_i;
-
-			case Constants::SocialType::Twitter:
-				return counts[:favorites].to_i +
+			case SocialType_GP:
+				return this.getEngagementsCountByRating(counts, social_type);
+			case SocialType_TP:
+				return this.getEngagementsCountByRating(counts, social_type);
+			case SocialType_IOS:
+				return this.getEngagementsCountByRating(counts, social_type);
+			
+			case SocialType_TWITTER:
+				return counts.favorites.to_i +
 				counts.hasOwnPropertyreplies.to_i +
 				(counts.shares.to_i || 0);
 
 			default:
 				return 0;
 		}
+	}
+
+	private getEngagementsCountByRating(counts: Object, social_type: number): number {
+		return 10 - counts.rating.to_i;
 	}
 
 	private UpdateStatusScores(scores: Map<TStatusID, TScore>): void {
