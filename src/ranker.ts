@@ -101,24 +101,28 @@ export class Ranker implements IRanker {
 
 		switch (social_type) {
 			case SocialType_GP:
-				return this.getEngagementsCountByRating(counts, social_type);
+				return this.getEngagementsCountByRating(counts);
 			case SocialType_TP:
-				return this.getEngagementsCountByRating(counts, social_type);
+				return this.getEngagementsCountByRating(counts);
 			case SocialType_IOS:
-				return this.getEngagementsCountByRating(counts, social_type);
+				return this.getEngagementsCountByRating(counts);
 			
 			case SocialType_TWITTER:
-				return counts.favorites.to_i +
-				counts.hasOwnPropertyreplies.to_i +
-				(counts.shares.to_i || 0);
+				return this.getEngagementsCountByFavorites(counts);
 
 			default:
 				return 0;
 		}
 	}
 
-	private getEngagementsCountByRating(counts: Object, social_type: number): number {
+	private getEngagementsCountByRating(counts: Object): number {
 		return 10 - counts.rating.to_i;
+	}
+
+	private getEngagementsCountByFavorites(counts: Object): number {
+		return counts.favorites.to_i +
+			counts.hasOwnPropertyreplies.to_i +
+			(counts.shares.to_i || 0);
 	}
 
 	private UpdateStatusScores(scores: Map<TStatusID, TScore>): void {
