@@ -5,7 +5,8 @@ import {
 	TStreamID,
 	TBusinessProfileID,
 	TBusinessProfileMetric,
-	TScore
+	TScore,
+	TSocialType
 } from "./types";
 import { GetStatusesByIDs } from "./repositories/elasticsearch";
 import { Sentiment_NEUTRAL_SET, SocialType_GP, SocialType_TP, SocialType_IOS, SocialType_TWITTER } from "./constants";
@@ -152,7 +153,7 @@ function GetBusinessProfileIDs(streamIDs: Array<TStreamID>): Array<TBusinessProf
 }
 
 // get BP's metric
-function GetBusinessProfileMetric(id: number, social_type: string): TBusinessProfileMetric {
+function GetBusinessProfileMetric(id: number, social_type: TSocialType): TBusinessProfileMetric {
 	// TODO implement GetBusinessProfileMetric
 
 	return {}
