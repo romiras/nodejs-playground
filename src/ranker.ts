@@ -36,8 +36,6 @@ export class Ranker implements IRanker {
 				let new_score = this.GetStatusScore(status, bp_metric)
 				this.SetStatusScore(scores, status.status_id, new_score)
 			});
-
-			this.UpdateStatusScores(scores)
 		});
 
 		return scores;
@@ -129,9 +127,7 @@ export class Ranker implements IRanker {
 		let replies = counts['hasOwnPropertyreplies'] || 0;
 		let shares = counts['shares'] || 0;
 
-		return favorites +
-			replies +
-			shares;
+		return favorites + replies + shares;
 	}
 
 	UpdateStatusScores(scores: Map<TStatusID, TScore>): void {
@@ -161,7 +157,7 @@ function GetBusinessProfileIDs(streamIDs: Array<TStreamID>): Array<TBusinessProf
 }
 
 // get BP's metric
-function GetBusinessProfileMetric(id: number, social_type: TSocialType): TBusinessProfileMetric {
+function GetBusinessProfileMetric(bpID: number, social_type: TSocialType): TBusinessProfileMetric {
 	// TODO implement GetBusinessProfileMetric
 
 	return {
