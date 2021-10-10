@@ -77,9 +77,9 @@ export class Ranker implements IRanker {
 		let engagements = this.GetEngagementsCount(attrs.counts, attrs.social_type)
 
 		// RNOTE: why 50?
-		let engagement_score = (max_engagements > 0) ? 50.0 * (engagements / max_engagements.toFixed(3)) : 0.0;
-	
-		let identity_score = (max_followers > 0) ? (followers_count.toFixed(3) / max_followers.toFixed(3)) : 0.0;
+		let engagement_score = (max_engagements > 0) ? 50.0 * (engagements / max_engagements) : 0.0;
+
+		let identity_score = (max_followers > 0) ? (followers_count / max_followers) : 0.0;
 
 		// RNOTE: no idea why we use another parameter with the identity score
 		let impact_score = 0.25 * identity_score;
@@ -87,7 +87,7 @@ export class Ranker implements IRanker {
 		// temporarily removed mentioned from the score since we need to devise a proper
 		// mechanism for selecting which mentions count, and how it performs across different
 		// streams and business profiles
-	
+
 		// in an ideal scenario, the weights for each independent variable should be
 		// determined by calculating the weight's significance among a dataset of documents
 		// that were manually ranked. unfortunately, instead, we have this
@@ -167,5 +167,5 @@ function GetBusinessProfileMetric(id: number, social_type: TSocialType): TBusine
 	return {
 		max_engagements: 0,
 		max_followers: 0,
-	}
+	};
 }
