@@ -12,21 +12,22 @@ import { GetStatusesByIDs } from "./repositories/elasticsearch";
 import { Sentiment_NEUTRAL_SET, SocialType_GP, SocialType_TP, SocialType_IOS, SocialType_TWITTER } from "./constants";
 
 export interface IRanker {
-	Rank(ids: Array<TStatusID>): void
+	Rank(ids: Array<TStatusID>): Map<TStatusID, TScore>;
+	UpdateStatusScores(scores: Map<string, number>): void;
 }
 
 export class Ranker implements IRanker {
-	Rank(ids: Array<TStatusID>): void {
+	Rank(ids: Array<TStatusID>): Map<TStatusID, TScore> {
 		const statuses = GetStatusesByIDs(ids);
 		logger.log('debug', statuses);
+
+		let scores: Map<TStatusID, TScore> = new Map();
 
 		statuses.forEach(status => {
 			let stream_ids = GetStatusStreamIDs(status);
 
 			let bp_ids = GetBusinessProfileIDs(stream_ids);
 			// handle error
-
-			let scores: Map<TStatusID, TScore> = new Map();
 
 			bp_ids.forEach(bp_id => {
 				let bp_metric = GetBusinessProfileMetric(bp_id, status.social_type);
@@ -38,6 +39,8 @@ export class Ranker implements IRanker {
 
 			this.UpdateStatusScores(scores)
 		});
+
+		return scores;
 	}
 
 	// update status's score
@@ -55,9 +58,9 @@ export class Ranker implements IRanker {
 	private GetStatusScore(status: TStatus, bp_metric: TBusinessProfileMetric): TScore {
 		let attrs = status.attrs;
 
-		let author_counts = attrs.author.counts || {};
+		let author_counts = attrs.author['counts'] || {};
 		let max_engagements = bp_metric.max_engagements || 0;
-	
+
 		// for now networks where there are follower counts are calculated the same as networks
 		// that don't have follower counts. it is generally acceptable when a social network is
 		// only compared to itself, but in our use-case this is not the case, so we'll need to
@@ -67,7 +70,7 @@ export class Ranker implements IRanker {
 		let max_followers = bp_metric.max_followers || 0;
 
 		// assign better scores to non-neutral statuses
-		let sentiment_score = Sentiment_NEUTRAL_SET.include(sentiment.value) ? 0.0 : 1.0;
+		let sentiment_score = Sentiment_NEUTRAL_SET.includes(status.sentiment.value) ? 0.0 : 1.0;
 
 		// R NOTE: for some reason, favorites and replies on Twitter are strings,
 		// even though the Elastic mapping is "long". need to check further.
@@ -117,16 +120,21 @@ export class Ranker implements IRanker {
 	}
 
 	private getEngagementsCountByRating(counts: Object): number {
-		return 10 - counts.rating.to_i;
+		let rating = counts['rating'] || 0;
+		return 10 - rating;
 	}
 
 	private getEngagementsCountByFavorites(counts: Object): number {
-		return counts.favorites.to_i +
-			counts.hasOwnPropertyreplies.to_i +
-			(counts.shares.to_i || 0);
+		let favorites = counts['favorites'] || 0;
+		let replies = counts['hasOwnPropertyreplies'] || 0;
+		let shares = counts['shares'] || 0;
+
+		return favorites +
+			replies +
+			shares;
 	}
 
-	private UpdateStatusScores(scores: Map<TStatusID, TScore>): void {
+	UpdateStatusScores(scores: Map<TStatusID, TScore>): void {
 		// TODO implement UpdateStatusScores
 
 		for (let [status_id, score] of scores) {
@@ -156,5 +164,8 @@ function GetBusinessProfileIDs(streamIDs: Array<TStreamID>): Array<TBusinessProf
 function GetBusinessProfileMetric(id: number, social_type: TSocialType): TBusinessProfileMetric {
 	// TODO implement GetBusinessProfileMetric
 
-	return {}
+	return {
+		max_engagements: 0,
+		max_followers: 0,
+	}
 }
