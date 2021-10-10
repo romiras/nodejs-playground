@@ -10,6 +10,7 @@ import {
 } from "./types";
 import { GetStatusesByIDs } from "./repositories/elasticsearch";
 import { Sentiment_NEUTRAL_SET, SocialType_GP, SocialType_TP, SocialType_IOS, SocialType_TWITTER } from "./constants";
+import * as stubs from "./stubs";
 
 export interface IRanker {
 	Rank(ids: Array<TStatusID>): Map<TStatusID, TScore>;
@@ -57,7 +58,7 @@ export class Ranker implements IRanker {
 		let attrs = status.attrs;
 
 		let author_counts = attrs.author['counts'] || {};
-		let max_engagements = bp_metric.max_engagements || 0;
+		let max_engagements = bp_metric['max_engagements'] || 0;
 
 		// for now networks where there are follower counts are calculated the same as networks
 		// that don't have follower counts. it is generally acceptable when a social network is
@@ -65,7 +66,7 @@ export class Ranker implements IRanker {
 		// calculate it differently on different networks
 		let followers_count = author_counts.followers || 0;
 
-		let max_followers = bp_metric.max_followers || 0;
+		let max_followers = bp_metric['max_followers'] || 0;
 
 		// assign better scores to non-neutral statuses
 		let sentiment_score = Sentiment_NEUTRAL_SET.includes(status.sentiment.value) ? 0.0 : 1.0;
@@ -141,12 +142,9 @@ export class Ranker implements IRanker {
 
 // get stream IDs from status
 function GetStatusStreamIDs(status: TStatus): Array<TStreamID> {
-	// TODO implement GetStatusStreamIDs
-
-	// let attrs = status.attrs;
-	// return attrs.stream_ids || attrs.properties&.stream_ids || []
-
-	return Array<TStreamID>();
+	let attrs = status.attrs;
+	let streamIDs = attrs.stream_ids;
+	return streamIDs;
 }
 
 // get BPs' IDs by stream IDs
@@ -160,8 +158,5 @@ function GetBusinessProfileIDs(streamIDs: Array<TStreamID>): Array<TBusinessProf
 function GetBusinessProfileMetric(bpID: number, social_type: TSocialType): TBusinessProfileMetric {
 	// TODO implement GetBusinessProfileMetric
 
-	return {
-		max_engagements: 0,
-		max_followers: 0,
-	};
+	return stubs.GetBusinessProfileMetricStub(bpID, social_type);
 }

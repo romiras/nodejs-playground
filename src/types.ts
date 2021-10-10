@@ -3,6 +3,7 @@ export type TStatusAttributes = {
     author: Object;
     counts: Object;
     social_type: TSocialType;
+    stream_ids: Array<TStreamID>;
 };
 export type TSocialType = number;
 export type TStatus = {
@@ -13,10 +14,7 @@ export type TStatus = {
 };
 export type TStreamID = string;
 export type TBusinessProfileID = number;
-export type TBusinessProfileMetric = {
-    max_engagements: number;
-    max_followers: number;
-};
+export type TBusinessProfileMetric = Object;
 export type TScore = number;
 export type TSentiment = {
     value: number
