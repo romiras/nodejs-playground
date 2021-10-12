@@ -16,7 +16,7 @@
     "url": "git+https://github.com/romiras/nodejs-playground.git"
   },
   "dependencies": {
-    "ajv": "^8.6.3",
+    "redis": "^4.0.0-rc.3",
     "dotenv": "^9.0.2",
     "typescript": "^4.4.3"
   },

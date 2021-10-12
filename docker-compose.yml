@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  demo:
+    build:
+      context: .
+    depends_on:
+      - redis
+    environment:
+      REDIS_URL: 'redis://redis:6379/0'
+
+  redis:
+    image: redis:6.0-alpine
+    command: redis-server
