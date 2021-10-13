@@ -29,4 +29,6 @@ console.log('redis: ' + redis_url);
 	});
 
 	console.log('value: ' + value);
+
+	await client.quit();
 })();
