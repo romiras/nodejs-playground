@@ -1,34 +1,28 @@
-import { createClient } from 'redis';
-
-const redis_url = process.env.REDIS_URL;
-console.log('redis: ' + redis_url);
+import { exit } from 'process';
+import { RedisClient } from './repositories/redis';
+import { logger } from './logger';
 
 (async () => {
-	const client = createClient({ url: redis_url });
+	const client = new RedisClient();
 
-	client.on('error', err => console.log('Redis Client Error', err));
+	try {
+		await client.Connect();
+	} catch (error) {
+		console.error(error);
+		exit(1);
+	}
 
-	client.on('error', err => {
-		console.log('Redis Client Error', err);
-		throw new Error('Redis error occurred.');
-	});
-
-	await client.connect().catch(err => {
-		console.error(err);
-		throw new Error('connect error');
-	});
-
-	await client.set('key', 'zzz').catch(err => {
-		console.error(err);
+	await client.Set('key', 'zzz').catch(err => {
+		logger.log('error', err);
 		throw new Error('set error');
 	});
 
-	const value = await client.get('key').catch(err => {
+	const value = await client.Get('key').catch(err => {
 		console.error(err);
 		throw new Error('get error');
 	});
 
 	console.log('value: ' + value);
 
-	await client.quit();
+	await client.Close();
 })();
