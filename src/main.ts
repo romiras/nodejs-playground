@@ -1,13 +1,15 @@
 import { logger } from './logger';
 import { RedisRepository } from './repositories/redis';
+import { AmqpConsumer } from './handlers/amqp';
 import { exit } from 'process';
 
 const process = require('process');
 
 const redisDB = new RedisRepository();
+const mq = new AmqpConsumer();
 
 async function connect(): Promise<void> {
-	const promises: Promise<void>[] = [redisDB.Connect()];
+	const promises: Promise<void>[] = [redisDB.Connect(), mq.Connect()];
 
 	await Promise.all(promises).catch(error => {
 		logger.log('error', '!! failed.');
@@ -86,4 +88,11 @@ process.once('SIGINT', beforeExit);
 
 	await Do();
 	await close();
+
+	await mq.Consume('foo', async (body: string) => {
+		// const obj = JSON.parse(body);
+		// const event = obj as FooMessage;
+
+		logger.log('info', 'Got body:', body);
+	});
 })();

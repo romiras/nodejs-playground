@@ -6,9 +6,31 @@ services:
       context: .
     depends_on:
       - redis
+      - rabbitmq
     environment:
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_URL: "${REDIS_URL}"
+      HOST_REDIS_PORT: "${HOST_REDIS_PORT}"
+      RABBITMQ_URL: "${RABBITMQ_URL}"
+      NODE_ENV: dev
 
   redis:
-    image: redis:6.0-alpine
+    image: redis:${REDIS_VERSION:-6.0-alpine}
+    restart: "${REDIS_RESTART:-unless-stopped}"
     command: redis-server
+    ports:
+      - "${HOST_REDIS_PORT:-6379}:6379"
+    volumes:
+      - "redis:/data"
+
+  rabbitmq:
+    image: rabbitmq:${RABBITMQ_VERSION:-3.8-management-alpine}
+    restart: "${RABBITMQ_RESTART:-unless-stopped}"
+    ports:
+      - "${HOST_RABBITMQ_PORT:-5672}:5672"
+      - "15672:15672"
+    volumes:
+      - "rabbitmq:/var/lib/rabbitmq"
+
+volumes:
+  redis:
+  rabbitmq:
