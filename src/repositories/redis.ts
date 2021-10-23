@@ -1,12 +1,20 @@
 import { logger } from '../logger';
+import { ConfigService } from '../services/service.config';
 import { createClient } from 'redis';
 
-export class RedisClient {
+export interface IKVRepository {
+	Connect(): Promise<void>;
+	Close(): Promise<void>;
+	Get(key: string): Promise<string>;
+	Set(key: string, value: string): Promise<void>;
+}
+
+export class RedisRepository implements IKVRepository {
 	client: any;
 
 	constructor() {
-		const redis_url: string = process.env.REDIS_URL || 'redis://localhost:6379/0';
-		logger.log('info', 'Connecting to', redis_url);
+		const redis_url: string = ConfigService.redisUrl;
+		logger.log('info', 'Connecting to', ConfigService.redisUrl);
 		this.client = createClient({ url: redis_url });
 
 		this.client.on('error', err => {
@@ -24,14 +32,10 @@ export class RedisClient {
 	}
 
 	async Get(key: string): Promise<string> {
-		const value = this.client.get(key);
-		return Promise.resolve(value);
+		return this.client.get(key);
 	}
 
 	async Set(key: string, value: string): Promise<void> {
-		return new Promise<void>((resolve, reject) => {
-			this.client.set(key, value);
-			resolve();
-		});
+		return this.client.set(key, value);
 	}
 }

@@ -1,28 +1,89 @@
-import { exit } from 'process';
-import { RedisClient } from './repositories/redis';
 import { logger } from './logger';
+import { RedisRepository } from './repositories/redis';
+import { exit } from 'process';
 
-(async () => {
-	const client = new RedisClient();
+const process = require('process');
 
-	try {
-		await client.Connect();
-	} catch (error) {
-		console.error(error);
-		exit(1);
-	}
+const redisDB = new RedisRepository();
 
-	await client.Set('key', 'zzz').catch(err => {
+async function connect(): Promise<void> {
+	const promises: Promise<void>[] = [redisDB.Connect()];
+
+	await Promise.all(promises).catch(error => {
+		logger.log('error', '!! failed.');
+		return Promise.reject();
+	});
+}
+
+async function close(): Promise<void> {
+	logger.log('info', '!! Closing ALL');
+	await redisDB.Close();
+	logger.log('info', '!! ALL closed.');
+}
+
+async function Do(): Promise<void> {
+	await redisDB.Set('key', 'zzz').catch(err => {
 		logger.log('error', err);
 		throw new Error('set error');
 	});
 
-	const value = await client.Get('key').catch(err => {
+	const value = await redisDB.Get('key').catch(err => {
 		console.error(err);
 		throw new Error('get error');
 	});
+	logger.log('info', 'Got value =', value);
+}
 
-	console.log('value: ' + value);
+const shutdown = async function () {
+	return new Promise<void>((resolve, reject) => {
+		close();
+		resolve();
+	}).then(res => {
+		logger.log('info', 'Good bye!');
+	});
+};
 
-	await client.Close();
+const beforeExit = async function (sig) {
+	logger.log('info', `Performing graceful shutdown`, {
+		signal: sig,
+	});
+	await shutdown();
+	exit(0);
+};
+
+process
+	.on('unhandledRejection', (reason, promise) => {
+		logger.log('error', 'Unhandled Rejection thrown', {
+			error: reason,
+			promise,
+		});
+		shutdown();
+		exit(3);
+	})
+	.on('uncaughtException', err => {
+		logger.log('error', 'Uncaught Exception thrown', {
+			error: err,
+		});
+		shutdown();
+		exit(2);
+	});
+
+process.once('SIGTERM', beforeExit);
+process.once('SIGINT', beforeExit);
+
+(async () => {
+	logger.log('info', 'Initializing...');
+
+	try {
+		logger.log('info', '!! Connecting to ALL');
+		await connect();
+		logger.log('info', '!! ALL connected.');
+		logger.log('info', 'Initialized.');
+	} catch (error) {
+		logger.log('error', 'Failed to connect ALL. Aborting.');
+		exit(1);
+	}
+
+	await Do();
+	await close();
 })();
