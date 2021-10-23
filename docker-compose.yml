@@ -6,12 +6,32 @@ services:
       context: .
     depends_on:
       - redis
+      - mysql
       - rabbitmq
     environment:
       REDIS_URL: "${REDIS_URL}"
+      DATABASE_URL: "${DATABASE_URL}"
       HOST_REDIS_PORT: "${HOST_REDIS_PORT}"
       RABBITMQ_URL: "${RABBITMQ_URL}"
       NODE_ENV: dev
+
+  adminer:
+    image: adminer
+    restart: "always"
+    ports:
+      - "${HOST_ADMINER_PORT:-8088}:8080"
+
+  mysql:
+    image: mysql:${MYSQL_VERSION:-5.6}
+    restart: "${MYSQL_RESTART:-unless-stopped}"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD:-ci_pass}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE-ci_test}"
+    ports:
+      - "${HOST_MYSQL_PORT:-33061}:3306"
+    volumes:
+      - "mysql:/var/lib/mysql"
+      - "./docker/mysql/scripts:/docker-entrypoint-initdb.d"
 
   redis:
     image: redis:${REDIS_VERSION:-6.0-alpine}
@@ -33,4 +53,5 @@ services:
 
 volumes:
   redis:
+  mysql:
   rabbitmq:

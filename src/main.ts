@@ -1,15 +1,17 @@
 import { logger } from './logger';
 import { RedisRepository } from './repositories/redis';
 import { AmqpConsumer } from './handlers/amqp';
+import { MySQLRepository } from './repositories/mysql';
 import { exit } from 'process';
 
 const process = require('process');
 
 const redisDB = new RedisRepository();
+const mysqlDB = new MySQLRepository();
 const mq = new AmqpConsumer();
 
 async function connect(): Promise<void> {
-	const promises: Promise<void>[] = [redisDB.Connect(), mq.Connect()];
+	const promises: Promise<void>[] = [redisDB.Connect(), mysqlDB.Connect(), mq.Connect()];
 
 	await Promise.all(promises).catch(error => {
 		logger.log('error', '!! failed.');
@@ -19,7 +21,7 @@ async function connect(): Promise<void> {
 
 async function close(): Promise<void> {
 	logger.log('info', '!! Closing ALL');
-	await redisDB.Close();
+	await Promise.all([redisDB.Close(), mysqlDB.Close()]);
 	logger.log('info', '!! ALL closed.');
 }
 
@@ -34,6 +36,8 @@ async function Do(): Promise<void> {
 		throw new Error('get error');
 	});
 	logger.log('info', 'Got value =', value);
+
+	await mysqlDB.Version();
 }
 
 const shutdown = async function () {
@@ -87,7 +91,6 @@ process.once('SIGINT', beforeExit);
 	}
 
 	await Do();
-	await close();
 
 	await mq.Consume('foo', async (body: string) => {
 		// const obj = JSON.parse(body);

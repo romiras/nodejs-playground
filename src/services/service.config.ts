@@ -5,6 +5,10 @@ export class ConfigService {
 		return process.env.REDIS_URL || 'redis://localhost:6379/0';
 	}
 
+	public static get mysqlUrl(): string {
+		return process.env.DATABASE_URL; // || 'mysql://user:password@localhost:3306/db';
+	}
+
 	public static get rabbitmqUrl(): string {
 		return process.env.RABBITMQ_URL || 'amqp://localhost';
 	}
