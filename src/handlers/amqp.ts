@@ -13,7 +13,7 @@ export interface IAmqpConsumer {
 
 export class AmqpConsumer implements IAmqpConsumer {
 	connection: lib.Connection;
-	channel: any;
+	channel: lib.Channel;
 
 	async Connect(): Promise<void> {
 		logger.log('info', 'Connecting to', ConfigService.rabbitmqUrl);
@@ -37,18 +37,25 @@ export class AmqpConsumer implements IAmqpConsumer {
 
 	async Consume(queue: string, callback: OnMessageCallback): Promise<void> {
 		logger.log('info', 'DeclareQueue: ', queue);
-		await this.channel.assertQueue(queue, { durable: false });
+		const queueOk = await this.channel.assertQueue(queue, { durable: false });
+		if (!queueOk) {
+			return Promise.reject();
+		}
 
-		return new Promise<void>((resolve, _reject) => {
+		return new Promise<void>((resolve, reject) => {
 			this.channel
 				.consume(
 					queue,
 					async (msg: lib.ConsumeMessage) => {
+						if (msg === null) {
+							return;
+						}
+
 						const body = msg.content.toString();
-						logger.log('info', " [x] Received '%s'", body);
+						logger.log('info', ` [x] Received ${body}`);
 
 						try {
-							callback(body);
+							await callback(body);
 						} catch (error) {
 							logger.log('error', error);
 							return this.channel.nack(msg);
