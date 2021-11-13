@@ -8,7 +8,7 @@ export type OnMessageCallback = (msg: unknown) => Promise<void>;
 export interface IAmqpConsumer {
 	Connect(): Promise<void>;
 	Close(): Promise<void>;
-	Consume(queue: string, callback: OnMessageCallback): Promise<void>;
+	Consume(queue: string, callback: OnMessageCallback): Promise<unknown>;
 }
 
 export class AmqpConsumer implements IAmqpConsumer {
@@ -35,40 +35,33 @@ export class AmqpConsumer implements IAmqpConsumer {
 		throw new Error('Method not implemented.');
 	}
 
-	async Consume(queue: string, callback: OnMessageCallback): Promise<void> {
+	async Consume(queue: string, callback: OnMessageCallback): Promise<unknown> {
 		logger.log('info', 'DeclareQueue: ', queue);
 		const queueOk = await this.channel.assertQueue(queue, { durable: false });
 		if (!queueOk) {
 			return Promise.reject();
 		}
 
-		return new Promise<void>((resolve, reject) => {
-			this.channel
-				.consume(
-					queue,
-					async (msg: lib.ConsumeMessage) => {
-						if (msg === null) {
-							return;
-						}
+		logger.log('info', ' [*] Waiting for messages. To exit press CTRL+C');
+		return this.channel.consume(
+			queue,
+			async (msg: lib.ConsumeMessage) => {
+				if (msg === null) {
+					return;
+				}
 
-						const body = msg.content.toString();
-						logger.log('info', ` [x] Received ${body}`);
+				const body = msg.content.toString();
+				logger.log('info', ` [x] Received ${body}`);
 
-						try {
-							await callback(body);
-						} catch (error) {
-							logger.log('error', error);
-							return this.channel.nack(msg);
-						}
-						return this.channel.ack(msg);
-					},
-					{ noAck: false },
-				)
-				.then(() => {
-					logger.log('info', ' [*] Waiting for messages. To exit press CTRL+C');
-				});
-
-			resolve();
-		});
+				try {
+					await callback(body);
+				} catch (error) {
+					logger.log('error', error);
+					return this.channel.nack(msg);
+				}
+				return this.channel.ack(msg);
+			},
+			{ noAck: false },
+		);
 	}
 }
