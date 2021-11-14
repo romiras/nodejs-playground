@@ -3,6 +3,7 @@ import { exit } from 'process';
 
 const amqpUrl = process.env.AMQP_URL || 'amqp://127.0.0.1:5672';
 const queue = 'foo';
+const PrefetchCount = 2;
 
 const sleep = time => {
 	return new Promise(resolve => {
@@ -25,6 +26,7 @@ async function callback(body: string) {
 	try {
 		conn = await lib.connect(amqpUrl);
 		channel = await conn.createChannel();
+		await channel.prefetch(PrefetchCount);
 	} catch (err) {
 		console.error(err);
 		exit(1);
@@ -49,6 +51,9 @@ async function callback(body: string) {
 			}
 			return channel.ack(msg);
 		},
-		{ noAck: false },
+		{
+			consumerTag: 'demo',
+			noAck: false,
+		},
 	);
 })();
