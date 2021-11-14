@@ -1,4 +1,5 @@
 import * as lib from 'amqplib';
+import { exit } from 'process';
 
 const amqpUrl = process.env.AMQP_URL || 'amqp://127.0.0.1:5672';
 const queue = 'foo';
@@ -26,6 +27,7 @@ async function callback(body: string) {
 		channel = await conn.createChannel();
 	} catch (err) {
 		console.error(err);
+		exit(1);
 	}
 
 	console.log(` [*] Waiting for messages on queue '${queue}'. To exit press CTRL+C.`);
