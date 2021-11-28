@@ -1,6 +1,6 @@
 {
   "name": "nodejs-playground",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "a playground for Node.js worker",
   "license": "MIT",
   "scripts": {
@@ -8,7 +8,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest --coverage --forceExit --detectOpenHandles --config ./test/jest.config.json",
     "start:dev": "ts-node src/main.ts",
-    "start": "node dist/main.js",
+    "start": "node main.js",
     "release": "git checkout master && git pull origin master && TAG=$(node -p \"require('./package.json').version\") && git tag $TAG && git push origin $TAG"
   },
   "repository": {
