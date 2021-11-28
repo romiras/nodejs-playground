@@ -37,7 +37,7 @@ jobs:
             done
             echo Failed waiting for RabbitMQ && exit 1
 
-      - run: npm install
+      - run: npm ci
       - run: npm run test
 
 # Invoke jobs via workflows
