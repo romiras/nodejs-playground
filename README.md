@@ -9,3 +9,9 @@ git clone <REPO_URL>
 npm install
 npm run test
 ```
+
+## Deployment
+
+### CircleCI
+
+Contains configuration for publishing Docker image to Amazon ECR.
