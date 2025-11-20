@@ -2,10 +2,11 @@
 version: 2.1
 
 # Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
-# See: https://circleci.com/docs/2.0/orb-intro/
+# See: https://circleci.com/docs/orbs/author/orb-concepts/
 orbs:
-  node: circleci/node@4.7
-  aws-ecr: circleci/aws-ecr@7.3.0
+  node: circleci/node@6.1.0  # Updated from 4.7 to latest stable
+  aws-ecr: circleci/aws-ecr@9.2.1  # Updated from 7.3.0 to latest stable
+  aws-cli: circleci/aws-cli@4.1.1  # Added for additional AWS operations if needed
 
 #############################################################
 # Parameters
@@ -14,49 +15,136 @@ parameters:
   repo:
     type: string
     default: "nodejs-playground"
+  node_version:
+    type: string
+    default: "16.20"
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:<< pipeline.parameters.node_version >>  # Using CircleCI's official images
+      - image: cimg/redis:7.2  # Updated Redis version
+      - image: cimg/rabbitmq:3.12  # Updated RabbitMQ version
+    environment:
+      RABBITMQ_PORT: 5672
+      NODE_ENV: test
 
 jobs:
   node-test:
-    docker:
-      - image: circleci/node:16.10
-      - image: redis:6.0-alpine
-      - image: rabbitmq:3.8-alpine
-    environment:
-      RABBITMQ_PORT: 5672
+    executor: node-executor
     steps:
       - checkout
-
+      
+      # Wait for RabbitMQ with timeout
       - run:
-          name: Waiting for RabbitMQ to be ready
+          name: Wait for RabbitMQ
           command: |
-            for i in `seq 1 15`;
-            do
-              nc -z 127.0.0.1 ${RABBITMQ_PORT} && echo Success && exit 0
-              echo -n .
-              sleep 1
-            done
-            echo Failed waiting for RabbitMQ && exit 1
+            timeout 30s bash -c "until nc -z localhost ${RABBITMQ_PORT}; do echo waiting for RabbitMQ...; sleep 2; done"
+            if [ $? -ne 0 ]; then
+              echo "RabbitMQ did not become available within 30 seconds"
+              exit 1
+            fi
+            echo "RabbitMQ is ready!"
 
-      - run: npm ci
-      - run: npm run test
+      # Install dependencies with cache
+      - node/install-packages:
+          pkg-manager: npm
+          cache-key: "npm-v1-{{ checksum \"package-lock.json\" }}"
+
+      # Run tests
+      - run:
+          name: Run Tests
+          command: npm run test
+          no_output_timeout: 10m  # Increase timeout for longer test runs
+
+      # Store test results and artifacts
+      - store_test_results:
+          path: coverage
+      - store_artifacts:
+          path: coverage
+          destination: test-results
+
+  security-scan:
+    docker:
+      - image: cimg/node:<< pipeline.parameters.node_version >>
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Run Security Audit
+          command: npm audit --audit-level high
+      - run:
+          name: Run ESLint
+          command: npm run lint  # Assuming you have linting setup
+
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - aws-ecr/build-and-push-image:
+          account-url: AWS_ACCOUNT_URL  # Set in context
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          create-repository: false
+          dockerfile: Dockerfile
+          image-tag: "${CIRCLE_SHA1}"
+          path: .
+          region: AWS_REGION
+          repo: << pipeline.parameters.repo >>
+          tag: "${CIRCLE_SHA1},latest"
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  build-and-deploy:
+  build-test-deploy:
+    jobs:
+      - security-scan:
+          context:
+            - playground
+          filters:
+            branches:
+              ignore: 
+                - develop
+                - feature/*
+      - node-test:
+          context:
+            - playground
+          filters:
+            branches:
+              ignore: 
+                - develop
+                - feature/*
+      - deploy:
+          requires:
+            - node-test
+            - security-scan
+          filters:
+            branches:
+              only:
+                - main  # Updated from master to main
+                - develop
+          context: 
+            - playground-aws
+          name: Deploy to ECR
+
+  # Workflow for pull requests (no deployment)
+  pr-validation:
     jobs:
       - node-test:
           context:
             - playground
-      - aws-ecr/build-and-push-image:
-          requires:
-            - node-test # Only run deploy job once tests passed
-          repo: << pipeline.parameters.repo >>
           filters:
             branches:
-              only:
-                - master
-          name: Upgrade & Publish into ECR
-          context: playground-aws
-          #Job params
-          tag: "${CIRCLE_SHA1}"
+              ignore: 
+                - main
+                - develop
+      - security-scan:
+          context:
+            - playground
+          filters:
+            branches:
+              ignore: 
+                - main
+                - develop
