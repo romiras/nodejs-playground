@@ -4,8 +4,8 @@ version: 2.1
 # Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
 # See: https://circleci.com/docs/2.0/orb-intro/
 orbs:
-  node: circleci/node@4.7
-  aws-ecr: circleci/aws-ecr@7.3.0
+  node: circleci/node@7.2.1
+  aws-ecr: circleci/aws-ecr@9.8.1
 
 #############################################################
 # Parameters
@@ -18,9 +18,9 @@ parameters:
 jobs:
   node-test:
     docker:
-      - image: circleci/node:16.10
-      - image: redis:6.0-alpine
-      - image: rabbitmq:3.8-alpine
+      - image: circleci/node:20.19
+      - image: redis:7.0-alpine
+      - image: rabbitmq:4.2-alpine
     environment:
       RABBITMQ_PORT: 5672
     steps:
