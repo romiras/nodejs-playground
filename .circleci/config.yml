@@ -4,8 +4,9 @@ version: 2.1
 # Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
 # See: https://circleci.com/docs/2.0/orb-intro/
 orbs:
-  node: circleci/node@4.7
-  aws-ecr: circleci/aws-ecr@7.3.0
+  node: circleci/node@7.2.1
+  aws-cli: circleci/aws-cli@5.1
+  aws-ecr: circleci/aws-ecr@9.8.1
 
 #############################################################
 # Parameters
@@ -18,9 +19,9 @@ parameters:
 jobs:
   node-test:
     docker:
-      - image: circleci/node:16.10
-      - image: redis:6.0-alpine
-      - image: rabbitmq:3.8-alpine
+      - image: cimg/node:20.19
+      - image: redis:7.0-alpine
+      - image: rabbitmq:4.2-alpine
     environment:
       RABBITMQ_PORT: 5672
     steps:
@@ -43,20 +44,29 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  build-and-deploy:
+  build-and-test:
     jobs:
       - node-test:
           context:
             - playground
-      - aws-ecr/build-and-push-image:
-          requires:
-            - node-test # Only run deploy job once tests passed
-          repo: << pipeline.parameters.repo >>
-          filters:
-            branches:
-              only:
-                - master
-          name: Upgrade & Publish into ECR
-          context: playground-aws
-          #Job params
-          tag: "${CIRCLE_SHA1}"
+  # build-and-deploy:
+  #   jobs:
+  #     - node-test:
+  #         context:
+  #           - playground
+  #     - aws-ecr/build_and_push_image:
+  #         requires:
+  #           - node-test # Only run deploy job once tests passed
+  #         repo: << pipeline.parameters.repo >>
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #         name: Upgrade & Publish into ECR
+  #         context: playground-aws
+  #         #Job params
+  #         tag: "${CIRCLE_SHA1}"
+  #         auth:
+  #           - aws-cli/setup:
+  #               # replace 123456789012 to correct
+  #               role_arn: arn:aws:iam::123456789012
