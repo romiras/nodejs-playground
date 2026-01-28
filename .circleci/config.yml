@@ -19,7 +19,7 @@ parameters:
 jobs:
   node-test:
     docker:
-      - image: circleci/node:20.19
+      - image: circleci/node:20.9
       - image: redis:7.0-alpine
       - image: rabbitmq:4.2-alpine
     environment:
